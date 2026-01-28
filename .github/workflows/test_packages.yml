@@ -1,0 +1,22 @@
+name: Test packages
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 'ruby'
+          bundler-cache: true
+
+      - working-directory: ./packages/message/verifier
+        run: |
+          bundle exec ruby testdata_generate.rb
+          go test ./...
+          bundle exec ruby testdata_verify.rb

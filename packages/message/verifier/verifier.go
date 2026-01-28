@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	macSeparator          = []byte("--")
+	separator             = []byte("--")
 	InvalidSignatureError = errors.New("verifier: invalid signature")
 )
 
@@ -22,6 +22,9 @@ type Verifier struct {
 }
 
 func New(msgCodec codec.Codec, macHashFunc func() hash.Hash, macSecret string) *Verifier {
+	if macHashFunc == nil {
+		panic("verifier: empty hash func")
+	}
 	if macSecret == "" {
 		panic("verifier: empty secret")
 	}
@@ -33,8 +36,8 @@ func New(msgCodec codec.Codec, macHashFunc func() hash.Hash, macSecret string) *
 	}
 }
 
-func (v *Verifier) Verify(sealed string, data any, opt codec.MetadataOption) error {
-	encoded, err := v.verifyAndExtractMAC([]byte(sealed))
+func (v *Verifier) Verify(sealed []byte, data any, opt codec.MetadataOption) error {
+	encoded, err := v.VerifyAndExtractMAC(sealed)
 	if err != nil {
 		return err
 	}
@@ -47,33 +50,33 @@ func (v *Verifier) Verify(sealed string, data any, opt codec.MetadataOption) err
 	return v.msgCodec.DeserializeWithMetadata(serialized, data, opt)
 }
 
-func (v *Verifier) Generate(data any, opt codec.MetadataOption) (string, error) {
+func (v *Verifier) Generate(data any, opt codec.MetadataOption) ([]byte, error) {
 	serialized, err := v.msgCodec.SerializeWithMetadata(data, opt)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	encoded := v.msgCodec.Encode(serialized)
-	sealed := v.generateAndAppendMAC(encoded)
+	sealed := v.GenerateAndAppendMAC(encoded)
 
-	return string(sealed), nil
+	return sealed, nil
 }
 
-func (v *Verifier) generateMAC(encoded []byte) []byte {
+func (v *Verifier) GenerateMAC(encoded []byte) []byte {
 	mac := hmac.New(v.macHashFunc, v.macSecret)
 	mac.Write(encoded)
 
 	return mac.Sum(nil)
 }
 
-func (v *Verifier) generateAndAppendMAC(encoded []byte) []byte {
-	mac := v.generateMAC(encoded)
+func (v *Verifier) GenerateAndAppendMAC(encoded []byte) []byte {
+	mac := v.GenerateMAC(encoded)
 
-	return hex.AppendEncode(append(encoded, macSeparator...), mac)
+	return hex.AppendEncode(append(encoded, separator...), mac)
 }
 
-func (v *Verifier) verifyAndExtractMAC(sealed []byte) ([]byte, error) {
-	encoded, hexMAC, found := bytes.Cut(sealed, macSeparator)
+func (v *Verifier) VerifyAndExtractMAC(sealed []byte) ([]byte, error) {
+	encoded, hexMAC, found := bytes.Cut(sealed, separator)
 	if !found {
 		return nil, InvalidSignatureError
 	}
@@ -85,7 +88,7 @@ func (v *Verifier) verifyAndExtractMAC(sealed []byte) ([]byte, error) {
 	}
 	unverifiedMAC = unverifiedMAC[:n]
 
-	computedMAC := v.generateMAC(encoded)
+	computedMAC := v.GenerateMAC(encoded)
 	if !hmac.Equal(unverifiedMAC, computedMAC) {
 		return nil, InvalidSignatureError
 	}
