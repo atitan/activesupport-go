@@ -2,9 +2,9 @@ require 'active_support'
 require 'json'
 require 'fileutils'
 
-FileUtils.rm_r('message/encryptor/testdata')
+FileUtils.rm_rf('message/encryptor/testdata')
 FileUtils.mkdir_p('message/encryptor/testdata')
-FileUtils.rm_r('message/verifier/testdata')
+FileUtils.rm_rf('message/verifier/testdata')
 FileUtils.mkdir_p('message/verifier/testdata')
 
 matrix = {
