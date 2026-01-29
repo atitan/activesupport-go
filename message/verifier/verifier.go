@@ -16,23 +16,23 @@ var (
 )
 
 type Verifier struct {
-	msgCodec    codec.Codec
-	macHashFunc func() hash.Hash
-	macSecret   []byte
+	msgCodec   codec.Codec
+	hmacFunc   func() hash.Hash
+	hmacSecret []byte
 }
 
-func New(msgCodec codec.Codec, macHashFunc func() hash.Hash, macSecret []byte) *Verifier {
-	if macHashFunc == nil {
+func New(msgCodec codec.Codec, hmacFunc func() hash.Hash, hmacSecret []byte) *Verifier {
+	if hmacFunc == nil {
 		panic("verifier: empty hash func")
 	}
-	if macSecret == nil {
+	if hmacSecret == nil {
 		panic("verifier: empty secret")
 	}
 
 	return &Verifier{
-		msgCodec:    msgCodec,
-		macHashFunc: macHashFunc,
-		macSecret:   macSecret,
+		msgCodec:   msgCodec,
+		hmacFunc:   hmacFunc,
+		hmacSecret: hmacSecret,
 	}
 }
 
@@ -55,7 +55,7 @@ func (v *Verifier) Generate(data any, opt codec.MetadataOption) ([]byte, error) 
 }
 
 func (v *Verifier) CalculateMAC(encoded []byte) []byte {
-	mac := hmac.New(v.macHashFunc, v.macSecret)
+	mac := hmac.New(v.hmacFunc, v.hmacSecret)
 	mac.Write(encoded)
 
 	return mac.Sum(nil)
