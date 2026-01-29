@@ -15,8 +15,7 @@ jobs:
           ruby-version: 'ruby'
           bundler-cache: true
 
-      - working-directory: ./packages/message/verifier
-        run: |
+      - run: |
           bundle exec ruby testdata_generate.rb
           go test ./...
           bundle exec ruby testdata_verify.rb

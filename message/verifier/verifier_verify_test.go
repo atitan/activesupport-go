@@ -21,7 +21,7 @@ var (
 	// Codec setting does not matter when verifying
 	msgVerifyCodec = codec.New(false, false)
 	macHashFunc    = sha256.New
-	macSecret      = "12345678"
+	macSecret      = []byte("12345678")
 )
 
 func TestVerifyModernSimpleString(t *testing.T) {

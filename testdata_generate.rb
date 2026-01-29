@@ -1,59 +1,54 @@
 require 'active_support'
 require 'json'
+require 'fileutils'
 
-digest = 'SHA256'
-serializer = JSON
-secret = '12345678'
+FileUtils.mkdir_p('message/encryptor/testdata')
+FileUtils.mkdir_p('message/verifier/testdata')
 
 matrix = {
-  TestGenerateModernSimpleString: {
+  TestVerifyModernSimpleString: {
     url_safe: false, legacy: false, data: 'signed message', opt: {},
   },
-  TestGenerateModernSimpleStringURLSafe: {
+  TestVerifyModernSimpleStringURLSafe: {
     url_safe: true, legacy: false, data: '>?>', opt: {},
   },
-  TestGenerateModernSimpleEnvelope: {
+  TestVerifyModernSimpleEnvelope: {
     url_safe: false, legacy: false, data: 'signed message', opt: { purpose: 'pizza' },
   },
-  TestGenerateModernComplexEnvelope: {
+  TestVerifyModernComplexEnvelope: {
     url_safe: false, legacy: false, data: { 'ab' => 123, 'cd' => 'yellow', 'ef' => true, 'gh' => nil }, opt: { purpose: 'pizza' },
   },
-  TestGenerateModernComplexEnvelopeURLSafe: {
+  TestVerifyModernComplexEnvelopeURLSafe: {
     url_safe: true, legacy: false, data: { 'ab' => 123, 'cd' => 'yellow', 'ef' => true, 'gh' => nil }, opt: { purpose: 'pizza' },
   },
-  TestGenerateLegacySimpleEnvelope: {
+  TestVerifyLegacySimpleEnvelope: {
     url_safe: false, legacy: true, data: 'signed message', opt: { purpose: 'pizza' },
   },
-  TestGenerateLegacyComplexEnvelope: {
+  TestVerifyLegacyComplexEnvelope: {
     url_safe: false, legacy: true, data: { 'ab' => 123, 'cd' => 'yellow', 'ef' => true, 'gh' => nil }, opt: { purpose: 'pizza' },
   },
-  TestGenerateLegacyComplexEnvelopeURLSafe: {
+  TestVerifyLegacyComplexEnvelopeURLSafe: {
     url_safe: true, legacy: true, data: { 'ab' => 123, 'cd' => 'yellow', 'ef' => true, 'gh' => nil }, opt: { purpose: 'pizza' },
   },
-  TestGenerateMismatchPurpose: {
-    url_safe: false, legacy: false, data: 'signed message', opt: { purpose: 'pineapple' }, expect_invalid: true,
+  TestVerifyMismatchPurpose: {
+    url_safe: false, legacy: false, data: 'signed message', opt: { purpose: 'pineapple' },
   },
-  TestGenerateExpired: {
-    url_safe: false, legacy: false, data: 'signed message', opt: {}, expect_invalid: true,
+  TestVerifyExpired: {
+    url_safe: false, legacy: false, data: 'signed message', opt: { expires_at: Time.new(2007, 1, 1, 0, 0, 0) },
   },
 }
 
 matrix.each do |name, setup|
-  input = File.read("testdata/#{name}.txt")
-
   v = ActiveSupport::MessageVerifier.new(
-    secret,
-    digest: digest,
-    serializer: serializer,
+    '12345678',
+    digest: 'SHA256',
+    serializer: JSON,
     url_safe: setup[:url_safe],
     force_legacy_metadata_serializer: setup[:legacy],
   )
 
-  parsed = v.verify(input, **setup[:opt])
+  out = v.generate(setup[:data], **setup[:opt])
 
-  if parsed != setup[:data]
-    raise "#{parsed}, #{setup[:data]}"
-  end
-rescue ActiveSupport::MessageVerifier::InvalidSignature
-  raise unless setup[:expect_invalid]
+  File.write("message/verifier/testdata/#{name}.txt", out)
 end
+
