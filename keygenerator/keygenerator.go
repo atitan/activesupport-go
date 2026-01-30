@@ -1,15 +1,9 @@
 package keygenerator
 
 import (
-	"crypto/sha1"
 	"hash"
 
 	"golang.org/x/crypto/pbkdf2"
-)
-
-var (
-	DefaultIteration = 1 << 16
-	DefaultHMACFunc  = sha1.New
 )
 
 type KeyGenerator struct {
